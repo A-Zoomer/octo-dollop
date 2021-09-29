@@ -83,6 +83,4 @@ replaceinfile "$u_crt" "$match_bg" "${colorRaw["color0"]}"
 replaceinfile "global" "frame_color" "${colorRaw["color1"]}"
 
 reload_dunst
-#notify-send -u normal "SILENCE" "Brand!"
 notify-send  "Dunst Colorscheme Updated"
-#printf "${colors["color2"]}"
