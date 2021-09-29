@@ -1,0 +1,30 @@
+#!/bin/bash
+
+wall=$2  #1) - Background Image Path
+backend=$1 #2) - Optional Backend for wal
+
+init(){
+    clear
+    echo -e ">> GENERATING WAL SCHEME FOR $wall WITH $backend BACKEND"
+    wal -i $wall --backend $backend
+    echo -e ">> UPDATING DE/WM"
+    ./setOpenBox -u
+    echo -e ">> UPDATING SYSBAR"
+    ./setPolybar -u
+    echo -e ">> UPDATING ROFI"
+    ./setRofi -u
+    echo -e ">> FINISHED!"
+}
+
+if [[ -n $wall ]]; then
+	if [[ -n $backend ]]; then
+		init
+	else
+		backend="wal"
+		init
+	fi
+else 
+	echo -e "\e[1;32mHelp:\e[0m\n" \
+		"	setColors (WAL_BACKEND )[IMG_PATH]"
+	echo "$(wal --backend)"
+fi

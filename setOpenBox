@@ -1,0 +1,96 @@
+#!/bin/bash
+
+declare -A colorRaw
+declare -a tmp
+vrs=0.9.7
+
+getcolors(){
+	#mapfile -t gino < <( xrdb -query | grep "*color" )
+	local tmpKey="TMP_KEY"
+	for i in $(xrdb -query | grep *color); do
+		if [[ ${i:0:6} == "*color" ]]; then
+			i=${i:1:-1}				#normalize key
+			colorRaw[$i]="empty"
+			tmpKey=$i
+		else
+			colorRaw[$tmpKey]=$i
+		fi
+	done
+}
+
+printcolors(){
+	for i in "${!colorRaw[@]}"; do
+		local tmp=${i#color}
+		local strClr=$i
+		if (( ${strClr:5} < 10 )); then
+			strClr="${i} "
+		fi
+		echo -e "$strClr" ${colorRaw[$i]}  $(printf '\e[48;5;%dm ' $tmp )  '   '  \\033[0m  
+		printf '\033[0m'
+	done
+}
+
+replaceinfile(){
+	## ARGUMENTS:
+	#1- string: string to replace
+	#2- string: new color
+	#3- string: file location
+	
+	local str=$1
+	local rpl="$1: $2"
+	
+	local composer="/$str/c\\$rpl"
+	
+	sed -i "$composer" $3
+}
+
+updateBoxColors(){
+	local boxConfdir=~/.themes/Raven-Crimson/openbox-3/themerc
+
+	local activeTbarBg="window.active.title.bg.color"
+	local activeTbarBgTo="window.active.title.bg.colorTo"
+
+	local IactiveTbarBg="window.inactive.title.bg.color"	
+	local menuTitleBg="menu.title.bg.color"
+	local mItemActiveBg="menu.items.active.bg.color"
+	local osdBg="osd.bg.color"
+	local osdLabelBg="osd.label.bg.color"
+	local osdHilightBg="osd.hilight.bg.color"
+
+	replaceinfile $activeTbarBg ${colorRaw["color2"]} $boxConfdir
+	replaceinfile $activeTbarBgTo ${colorRaw["color0"]} $boxConfdir
+
+	replaceinfile $IactiveTbarBg ${colorRaw["color1"]} $boxConfdir  
+	replaceinfile $menuTitleBg ${colorRaw["color2"]} $boxConfdir
+	replaceinfile $mItemActiveBg ${colorRaw["color1"]} $boxConfdir
+	replaceinfile $osdBg ${colorRaw["color0"]} $boxConfdir
+	replaceinfile $osdLabelBg ${colorRaw["color0"]} $boxConfdir
+	replaceinfile $osdHilightBg ${colorRaw["color1"]} $boxConfdir
+}
+
+case $1 in
+	-u | --update)
+		getcolors
+		updateBoxColors
+		openbox --restart
+    		;;
+  	-s | --show )
+    		getcolors
+		printcolors
+    		;;
+  	-v | --version )
+    		echo "Version $vrs"	
+    		;;
+	*)
+		echo "Usage: setBoxColors [arguments]";
+		echo "	-s | --show 	show colorscheme";
+		echo "	-u | --update 	update colors"
+		echo "	-v | --version	show verion"
+		;;
+esac;shift;
+if [[ "$1" == '--' ]]; then shift;
+fi
+#getcolors
+#printcolors
+#updateBoxcolors
+#openbox --restart

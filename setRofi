@@ -1,0 +1,89 @@
+#!/bin/bash
+
+declare -A colorRaw
+confdir=~/.config/rofi/standard.rasi
+vrs="v0.4.9"
+
+line_bg="background-color"
+line_bd="border-color"
+line_txt="text-color"
+
+gen_p="* {"
+wndw_p="window"
+inbr_p="inputbar"
+prpt_p="prompt"
+txtb_p="textbox"
+ntry_p="entry"
+lstv_p="listview"
+lmnt_p="element"
+lmnt_s_p="element selected"
+
+getcolors(){
+	local tmpKey="TMP_K"
+	for i in $(xrdb -query | grep *color); do
+		if [[ ${i:0:6} == "*color" ]]; then
+			i=${i:1:-1}
+			colorRaw[$i]="empty"
+			tmpKey=$i
+		else
+			colorRaw[$tmpKey]=$i
+		fi
+	done
+}
+
+ispresent(){
+	## ARGS:
+	#1- string to query
+	#2- line position
+
+	local sedline="$2!d"
+	local ret=$(sed $sedline $confdir | grep -n "$1" | cut -f1 -d:)
+
+	if [[ -z $ret ]]; then
+		echo 0
+	else echo 1
+	fi
+}
+
+replaceinfile(){	
+	##ARGS
+	#1- class token
+	#2- color type
+	#3- new color
+
+	local replacer="  $2: $3;"
+	local u_line=$(grep -n "$1" $confdir | cut -f1 -d:)
+	local ret=0
+	while [ $ret -eq 0 ]; do
+		u_line=$(($u_line + 1))
+		ret=$(ispresent $2 $u_line)
+	done
+
+	local strpos="$u_line!d"
+	local str=$(sed $strpos $confdir)
+
+	local composer="${u_line}s/$str/$replacer/"
+	sed -i "$composer" "$confdir"
+}
+
+transp="44"
+
+case $1 in
+	-u | --update)
+		getcolors
+		replaceinfile "$gen_p" "$line_bg" "${colorRaw["color0"]}$transp"
+		replaceinfile "$gen_p" "$line_txt" "${colorRaw["color8"]}"
+		replaceinfile "$gen_p" "$line_bd" "${colorRaw["color8"]}"
+		;;
+	-v | --version)
+		echo "Rofi Module for ACC // $vrs"
+		;;
+	*)
+		echo "Usage: seRofi [arguments]";
+		echo "	-u | --update	update colors";
+		echo "	-v | --version	version & info";
+		;;	
+esac;shift;
+if [[ "$1" == '--' ]]; then shift;
+fi
+

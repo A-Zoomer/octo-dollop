@@ -1,0 +1,95 @@
+#!/bin/bash
+vrs="NOT_VERSIONED(YET)"
+
+declare -A colorRaw
+confdir=~/.config/polybar/config.ini
+
+match_bg="bg"
+match_fg="fg"
+match_fg_alt="fg-alt"
+
+override_bg_alpha="40"
+
+match_shade1="shade1"
+match_shade2="shade2"
+match_shade3="shade3"
+match_shade4="shade4"
+match_shade5="shade5"
+match_shade6="shade6"
+match_shade7="shade7"
+match_shade8="shade8"
+
+getcolors(){
+	local tmpKey="TMP_K"
+	for i in $(xrdb -query | grep *color); do
+		if [[ ${i:0:6} == "*color" ]]; then
+			i=${i:1:-1}
+			colorRaw[$i]="empty"
+			tmpKey=$i
+		else
+			colorRaw[$tmpKey]=$i
+		fi
+	done
+}
+
+replaceinfile(){
+	## ARGUMENTS:
+	#1- string: strig to replace
+	#2- string: new color
+	
+	local args="s/$1\ =\ .*/$1\ =\ $2/g"
+	#notify-send "Polybar-Script" "$args"
+	sed -i "$args" $confdir
+		
+}
+
+tmploop(){
+	##ARGUMENTS
+	#1- pattern
+	#2- times ( times > 0 )
+	#3- color to apply
+
+	local pattern=$1
+	for i in {1..8}; do
+		local str=$pattern$i
+		#notify-send $str$i
+		replaceinfile $str $3
+	done
+
+}
+
+updatecolors(){
+	local clr=${colorRaw["color0"]}
+	local fg=${colorRaw["color7"]}
+	local fg_alt=${colorRaw["color2"]}
+
+	local transp="#${clr:1}ff"
+	local bg="#${clr:1}ff"
+	
+	replaceinfile $match_bg $bg
+	replaceinfile $match_fg_alt $fg_alt
+	replaceinfile $match_fg $fg
+	#tmploop "shade" 8 "$transp"
+
+	replaceinfile "shadeCpu" $transp
+}
+
+case $1 in
+	-u | --update)
+		getcolors
+		updatecolors
+		polybar-msg cmd restart
+		;;
+	-v | --version)
+		echo "Polybar Module for ACC // $vrs"
+		;;
+	*)
+		echo "Usage: setPolybar [arguments]";
+		echo "	-u | --update	update colors";
+		echo "	-v | --version	version & info";
+		;;	
+esac;shift;
+if [[ "$1" == '--' ]]; then shift;
+fi
+#getcolors
+#updatecolors

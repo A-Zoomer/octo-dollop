@@ -1,0 +1,88 @@
+#!/bin/bash
+
+declare -A colorRaw
+confdir=~/.config/dunst/dunstrc
+
+u_low="urgency_low"
+u_nrm="urgency_normal"
+u_crt="urgency_critical"
+
+match_bg="background"
+match_fg="foreground"
+
+getcolors(){
+	local tmpKey="TMP_KEY"
+	for i in $(xrdb -query | grep *color); do
+		if [[ ${i:0:6} == "*color" ]]; then
+			i=${i:1:-1}
+			colorRaw[$i]="empty"
+			tmpKey=$i
+		else
+			colorRaw[$tmpKey]=$i
+		fi
+	done
+}
+
+reload_dunst(){
+	pkill dunst
+	#dunst -config ~/.config/dunst/dunstrc &
+}
+
+is_present(){
+	## ARGS:
+	#1- string to query
+	#2- line startoff
+	
+	local sedline="$2!d"
+	local ret=$(sed $sedline $confdir | grep -n $1 | cut -f1 -d:)
+		
+	#notify-send "RESULT at line $2" "$ret"
+	
+	if [[ -z $ret ]]; then
+		echo 0
+	else echo 1
+	fi
+}
+
+replaceinfile(){
+	## ARGS:
+	#1- string: urgency token
+	#2- string: line to replace (excluded the part to change)
+	#3- string: new color
+	
+	local replacer="    $2 = \"$3\""
+	local u_line=$(grep -n $1 $confdir | cut -f1 -d:) #return line of urgency entry
+	local ret=0
+	while [ $ret -eq 0 ]; do
+		u_line=$(($u_line + 1))
+		ret=$(is_present $2 $u_line)
+		#notify-send  $ret $u_line
+	done
+	
+	local strbef="$u_line!d"			#composing line to replace
+	local str=$(sed $strbef $confdir)
+
+	local composer="${u_line}s/$str/$replacer/"	#composing replacer string
+	sed -i "$composer" "$confdir"
+	
+	
+}
+
+printcolors(){
+	for i in "${!colorRaw[@]}"; do
+		local tmp=${i#color}
+		echo -e $i ${colorRaw[$i]}
+	done
+}
+
+getcolors
+replaceinfile "$u_low" "$match_bg" "${colorRaw["color0"]}"
+replaceinfile "$u_low" "$match_fg" "${colorRaw["color15"]}"
+replaceinfile "$u_nrm" "$match_bg" "${colorRaw["color0"]}"
+replaceinfile "$u_crt" "$match_bg" "${colorRaw["color0"]}"
+replaceinfile "global" "frame_color" "${colorRaw["color1"]}"
+
+reload_dunst
+#notify-send -u normal "SILENCE" "Brand!"
+notify-send  "Dunst Colorscheme Updated"
+#printf "${colors["color2"]}"
