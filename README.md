@@ -6,3 +6,4 @@
 * `setColors` is the main program, call the other modules and initialize pywal
 * `set___` all the others modules that parse key-based configuration files for the specified program
 
+This repo is not maintaned anymore.
